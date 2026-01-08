@@ -1,8 +1,9 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 
 export interface UseAsyncResult<T> {
   data: T | null;
+  setData: Dispatch<SetStateAction<T | null>>
   isLoading: boolean;
   error: Error | null;
   reload: () => void;
@@ -25,7 +26,9 @@ export function useSync<T>(asyncFn: () => Promise<T>, deps: any[] = []): UseAsyn
     try {
       const result = await asyncFn();
       if (!controller.signal.aborted) {
-        setData(result);
+        setTimeout(() => {
+          setData(result);
+        }, 1);
       }
     } catch (err) {
       if (!controller.signal.aborted) {
@@ -43,7 +46,13 @@ export function useSync<T>(asyncFn: () => Promise<T>, deps: any[] = []): UseAsyn
     return () => abortRef.current?.abort();
   }, [execute]);
 
-  return { data, isLoading, error, reload: execute };
+  return {
+    data,
+    setData: (d) => setData(d),
+    isLoading,
+    error,
+    reload: execute
+  };
 }
 
 type AsyncRenderer<T> = (data: T) => React.ReactNode;
