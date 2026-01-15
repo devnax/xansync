@@ -4,9 +4,12 @@ import { useSync } from './src';
 
 const Async = () => {
   const [id, setId] = useState(1)
-  const { data, isLoading, error, reload } = useSync(() => {
+  const { data, isLoading, error, reload } = useSync(async () => {
     return fetch(`https://jsonplaceholder.typicode.com/posts/${id}`).then(res => res.json())
   }, [id])
+
+  console.log(data, isLoading);
+
   if (isLoading) return <>Loading...</>
   if (error) return <>Error: {error.message}</>
 
