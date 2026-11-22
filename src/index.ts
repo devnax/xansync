@@ -32,6 +32,7 @@ export function useSync<T>(asyncFn: () => Promise<T>, deps: any[] = []): UseAsyn
     } catch (err) {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
+        setLoading(false);
       }
     }
   }, deps);
