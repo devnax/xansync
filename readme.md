@@ -87,54 +87,44 @@ The returned `UseAsyncResult<T>` contains:
 
 When a new operation starts, the hook clears the previous error. If the component unmounts or a newer operation replaces the current one, the older result is ignored. The underlying promise is not cancelled; `asyncFn` does not receive an `AbortSignal`.
 
-## `withAsync`
+## `withSync`
 
-Use `withAsync` to create a component that loads a value and passes it to a render function.
+Use `withSync` to wrap an asynchronous component function. It receives the component props, waits for its promise to resolve to a React node, and then renders that node.
 
 ```tsx
-import { withAsync } from "xansync";
+import { withSync } from "xansync";
 
 type Profile = {
   name: string;
 };
 
-const ProfileCard = withAsync<Profile>(
-  async () => {
-    const response = await fetch("/api/profile");
+type ProfileProps = {
+  userId: string;
+};
+
+const ProfileCard = withSync<ProfileProps>(
+  async ({ userId }) => {
+    const response = await fetch(`/api/profile/${encodeURIComponent(userId)}`);
     if (!response.ok) {
       throw new Error(`Request failed (${response.status})`);
     }
-    return response.json() as Promise<Profile>;
-  },
-  (profile) => <p>Welcome, {profile.name}.</p>,
-  <p>Loading profile...</p>,
-  (error) => <p role="alert">Could not load profile: {error.message}</p>
+    const profile = (await response.json()) as Profile;
+    return <p>Welcome, {profile.name}.</p>;
+  }
 );
 
 function App() {
-  return <ProfileCard />;
+  return <ProfileCard userId="123" />;
 }
 ```
 
 ### Signature
 
 ```ts
-withAsync<T>(
-  loader: () => Promise<T>,
-  render: (data: T) => React.ReactNode,
-  fallback?: React.ReactNode,
-  onError?: (error: Error) => React.ReactNode
-): () => React.ReactNode
+withSync<P extends object>(
+  Component: (props: P) => Promise<React.ReactNode>
+): (props: P) => React.ReactNode
 ```
 
-The returned component invokes `loader` when it mounts, displays `fallback` while loading, and uses `onError` to render a failure state. If no fallback or error renderer is provided, it renders nothing for that state. It also renders nothing if the resolved value is `null` or `undefined`.
+The wrapped component starts the async function after mounting and runs it again when the props object changes. It renders nothing while loading. If the promise rejects, the error is thrown during rendering so the nearest React error boundary can handle it. When props change or the component unmounts, results from the previous request are ignored; the underlying promise is not cancelled.
 
-## Development
-
-```bash
-npm run start
-npm run build
-npm run release
-```
-
-These scripts run the corresponding `makepack` commands.
